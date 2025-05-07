@@ -47,9 +47,9 @@ class SummarizerModel(BaseModel):
     def truncated(self, input_string, n_tokens=800):
 
         try:
-          tokens = tokenizer.encode(input_string)
+          tokens = self.tokenizer.encode(input_string)
           truncated_tokens = tokens[:n_tokens]
-          truncated_string = tokenizer.decode(truncated_tokens, skip_special_tokens=True)
+          truncated_string = self.tokenizer.decode(truncated_tokens, skip_special_tokens=True)
           return truncated_string
         finally:
             pass

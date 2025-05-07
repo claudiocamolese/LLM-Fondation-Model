@@ -6,7 +6,7 @@ class GeneratorModel(BaseModel):
         super().__init__(model_name, quantization_config, device)
         
         
-    def first_generate(self, prompt):
+    def first_generate(self, prompt, do_sample = False, max_new_tokens=30000):
         
         start = t.time()
 
@@ -106,7 +106,7 @@ class GeneratorModel(BaseModel):
             model_inputs = self.tokenizer([text], return_tensors="pt").to(self.device)
             streamer = TextStreamer(self.tokenizer, skip_special_tokens=True)
 
-            generated_ids = model.generate(
+            generated_ids = self.model.generate(
                 **model_inputs,
                 max_new_tokens=max_new_tokens,
                 streamer=streamer
@@ -118,7 +118,7 @@ class GeneratorModel(BaseModel):
 
             response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
             counter = len(self.tokenizer.encode(response))
-            perplexity =self.calculate_perplexity(model,self.tokenizer,response,device)
+            perplexity =self.calculate_perplexity(self.model, self.tokenizer, response, self.device)
             end=t.time()
 
             return end-start, response, counter, perplexity
