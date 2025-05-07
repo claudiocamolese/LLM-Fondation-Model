@@ -7,7 +7,6 @@ class GeneratorModel(BaseModel):
         
         
     def first_generate(self, prompt):
-
         
         start = t.time()
 
@@ -42,7 +41,7 @@ class GeneratorModel(BaseModel):
             response = self.tokenizer.batch_decode(processed_ids, skip_special_tokens=True)[0]
             counter = len(self.tokenizer.encode(response))
 
-            perplexity = calculate_perplexity(self.model, self.tokenizer, response, self.device)
+            perplexity = self.calculate_perplexity(self.model, self.tokenizer, response, self.device)
             end = t.time()
 
             return response, counter, perplexity, end-start
@@ -50,7 +49,7 @@ class GeneratorModel(BaseModel):
         finally:
             # Only attempt cleanup if model and tokenizer were initialized
             if self.model is not None and self.tokenizer is not None:
-                forget_all()
+                self.forget_all()
                 
     def calculate_perplexity(self, text):
         
@@ -58,7 +57,7 @@ class GeneratorModel(BaseModel):
         
         try:
             # Encode the text
-            encodings = self.tokenizer(text, return_tensors="pt").to(device)
+            encodings = self.tokenizer(text, return_tensors="pt").to(self.device)
 
             # Create a labels tensor that's a copy of the input_ids
             labels = encodings.input_ids.clone()
@@ -83,11 +82,8 @@ class GeneratorModel(BaseModel):
     def n_generate(self, prompt, summary,  max_new_tokens=800, do_sample=False):
 
         start=t.time()
-        try:
-            # Initialize a fresh model for this function call
-            model, tokenizer = initialize_model(model_name, quantization_config, device)
 
-            messages = [
+        messages = [
                 {"role": "system", "content": (
         "You are a summarization assistant. "
         "Your task is to output only the final summary of the user’s message, "
@@ -97,16 +93,18 @@ class GeneratorModel(BaseModel):
     )},
                 {"role": "user", "content": "prompt: " + prompt + "summary: " + summary}
             ]
-
-            text = tokenizer.apply_chat_template(
+        
+        try:
+            
+            text = self.tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True,
                 do_sample=do_sample
             )
 
-            model_inputs = tokenizer([text], return_tensors="pt").to(device)
-            streamer = TextStreamer(tokenizer, skip_special_tokens=True)
+            model_inputs = self.tokenizer([text], return_tensors="pt").to(self.device)
+            streamer = TextStreamer(self.tokenizer, skip_special_tokens=True)
 
             generated_ids = model.generate(
                 **model_inputs,
@@ -118,12 +116,12 @@ class GeneratorModel(BaseModel):
                 output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
             ]
 
-            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            counter = len(tokenizer.encode(response))
-            perplexity =calculate_perplexity(model,tokenizer,response,device)
+            response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            counter = len(self.tokenizer.encode(response))
+            perplexity =self.calculate_perplexity(model,self.tokenizer,response,device)
             end=t.time()
 
             return end-start, response, counter, perplexity
         finally:
             # Clean up everything even if an error occurs
-            forget_all(model=model, tokenizer=tokenizer)
+            self.forget_all()

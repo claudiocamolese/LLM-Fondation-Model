@@ -55,4 +55,4 @@ class SummarizerModel(BaseModel):
             pass
         # Clean up tokenizer if it was created
         # if tokenizer:
-        #     forget_all(tokenizer=tokenizer)
+        #    self.forget_all()
