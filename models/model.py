@@ -1,4 +1,4 @@
-class base_model():
+class BaseModel():
     def __init__(self, model_name, quantization_config, device):
         self.model_name = model_name
         self.quantization_config = quantization_config
@@ -10,7 +10,7 @@ class base_model():
         device_map = self.device,
         use_cache =  False)
         
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding=True, padding_side = "left")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side = "left")
         
     def forget_all(self):
         import gc
