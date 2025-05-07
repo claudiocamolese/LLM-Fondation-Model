@@ -52,7 +52,5 @@ class SummarizerModel(BaseModel):
           truncated_string = self.tokenizer.decode(truncated_tokens, skip_special_tokens=True)
           return truncated_string
         finally:
+            # self.forget_all()
             pass
-        # Clean up tokenizer if it was created
-        # if tokenizer:
-        #    self.forget_all()

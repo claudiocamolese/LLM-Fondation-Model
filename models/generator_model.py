@@ -41,7 +41,7 @@ class GeneratorModel(BaseModel):
             response = self.tokenizer.batch_decode(processed_ids, skip_special_tokens=True)[0]
             counter = len(self.tokenizer.encode(response))
 
-            perplexity = self.calculate_perplexity(self.model, self.tokenizer, response, self.device)
+            perplexity = self.calculate_perplexity(response)
             end = t.time()
 
             return response, counter, perplexity, end-start
@@ -51,34 +51,7 @@ class GeneratorModel(BaseModel):
             if self.model is not None and self.tokenizer is not None:
                 self.forget_all()
                 
-    def calculate_perplexity(self, text):
-        
-        """Calculate the perplexity of the generated text."""
-        
-        try:
-            # Encode the text
-            encodings = self.tokenizer(text, return_tensors="pt").to(self.device)
-
-            # Create a labels tensor that's a copy of the input_ids
-            labels = encodings.input_ids.clone()
-
-            # Forward pass with labels for loss calculation
-            with torch.no_grad():
-                outputs = self.model(**encodings, labels=labels)
-
-            # Get the loss
-            neg_log_likelihood = outputs.loss.item()
-
-            # Calculate perplexity: exp(loss)
-            # Loss is already the mean negative log-likelihood
-            perplexity = torch.exp(torch.tensor(neg_log_likelihood)).item()
-
-            return perplexity
-        
-        except Exception as e:
-            print(f"Error calculating perplexity: {e}")
-            return float('nan')
-        
+                
     def n_generate(self, prompt, summary,  max_new_tokens=800, do_sample=False):
 
         start=t.time()
@@ -118,10 +91,39 @@ class GeneratorModel(BaseModel):
 
             response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
             counter = len(self.tokenizer.encode(response))
-            perplexity =self.calculate_perplexity(self.model, self.tokenizer, response, self.device)
+            perplexity =self.calculate_perplexity(response)
             end=t.time()
 
             return end-start, response, counter, perplexity
         finally:
             # Clean up everything even if an error occurs
-            self.forget_all()
+            # self.forget_all()
+            pass
+            
+    def calculate_perplexity(self, text):
+        
+        """Calculate the perplexity of the generated text."""
+        
+        try:
+            # Encode the text
+            encodings = self.tokenizer(text, return_tensors="pt").to(self.device)
+
+            # Create a labels tensor that's a copy of the input_ids
+            labels = encodings.input_ids.clone()
+
+            # Forward pass with labels for loss calculation
+            with torch.no_grad():
+                outputs = self.model(**encodings, labels=labels)
+
+            # Get the loss
+            neg_log_likelihood = outputs.loss.item()
+
+            # Calculate perplexity: exp(loss)
+            # Loss is already the mean negative log-likelihood
+            perplexity = torch.exp(torch.tensor(neg_log_likelihood)).item()
+
+            return perplexity
+        
+        except Exception as e:
+            print(f"Error calculating perplexity: {e}")
+            return float('nan')
