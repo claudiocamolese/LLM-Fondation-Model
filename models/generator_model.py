@@ -1,12 +1,9 @@
-from model import BaseModel
-
 class GeneratorModel(BaseModel):
     
     def __init__(self, model_name, quantization_config, device):
         super().__init__(model_name, quantization_config, device)
         
-        
-    def first_generate(self, prompt, do_sample = False, max_new_tokens=30000):
+    def first_generate(self, prompt, do_sample=False, max_new_tokens=30000):
         
         start = t.time()
 
@@ -51,24 +48,21 @@ class GeneratorModel(BaseModel):
             if self.model is not None and self.tokenizer is not None:
                 self.forget_all()
                 
-                
-    def n_generate(self, prompt, summary,  max_new_tokens=800, do_sample=False):
-
-        start=t.time()
+    def n_generate(self, prompt, summary, max_new_tokens=800, do_sample=False):
+        start = t.time()
 
         messages = [
-                {"role": "system", "content": (
-        "You are a summarization assistant. "
-        "Your task is to output only the final summary of the user’s message, "
-        "in one concise sentence. "
-        "Do NOT include any explanation, inner thoughts, or <think> tags. "
-        "Do NOT describe what you're doing. Just return the summary directly, nothing else."
-    )},
-                {"role": "user", "content": "prompt: " + prompt + "summary: " + summary}
-            ]
+            {"role": "system", "content": (
+                "You are a summarization assistant. "
+                "Your task is to output only the final summary of the user's message, "
+                "in one concise sentence. "
+                "Do NOT include any explanation, inner thoughts, or <think> tags. "
+                "Do NOT describe what you're doing. Just return the summary directly, nothing else."
+            )},
+            {"role": "user", "content": "prompt: " + prompt + "summary: " + summary}
+        ]
         
         try:
-            
             text = self.tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
@@ -91,8 +85,8 @@ class GeneratorModel(BaseModel):
 
             response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
             counter = len(self.tokenizer.encode(response))
-            perplexity =self.calculate_perplexity(response)
-            end=t.time()
+            perplexity = self.calculate_perplexity(response)
+            end = t.time()
 
             return end-start, response, counter, perplexity
         finally:
@@ -101,7 +95,6 @@ class GeneratorModel(BaseModel):
             pass
             
     def calculate_perplexity(self, text):
-        
         """Calculate the perplexity of the generated text."""
         
         try:

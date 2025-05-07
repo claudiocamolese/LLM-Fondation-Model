@@ -1,56 +1,52 @@
-from model import BaseModel
-
 class SummarizerModel(BaseModel):
-    
     def __init__(self, model_name, quantization_config, device):
+        # Riutilizza l'inizializzazione di BaseModel
         super().__init__(model_name, quantization_config, device)
-      
-        
-    def summarize(self, prompt, max_new_tokens=300, do_sample=False):
+    
+    def truncated(self, input_string, n_tokens):
+        """Truncate the input string to a specific number of tokens."""
         
         try:
-            messages = [
-                    {"role": "system", "content": "Provide only a concise summary of the user's message. Do NOT include any reasoning or inner thoughts. Do not add new informations. Output only the final summary text."},
-                    {"role": "user", "content": prompt}
-                ]
-
-            text = self.tokenizer.apply_chat_template(
+            tokens = self.tokenizer.encode(input_string)  # Usa self.tokenizer ereditato da BaseModel
+            truncated_tokens = tokens[:n_tokens]
+            truncated_string = self.tokenizer.decode(truncated_tokens, skip_special_tokens=True)
+            return truncated_string
+        except Exception as e:
+            print(f"Error truncating string: {e}")
+            return input_string[:100]  # Fallback to simple string slicing
+    
+    def summarize(self, text, max_new_tokens=800):
+        """Generate a summary of the provided text."""
+        
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that summarizes content concisely."},
+            {"role": "user", "content": f"Please summarize the following text:\n\n{text}"}
+        ]
+        
+        try:
+            formatted_text = self.tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
-                add_generation_prompt=True,
-                do_sample=do_sample
+                add_generation_prompt=True
             )
-
-            model_inputs = self.tokenizer([text], return_tensors="pt").to(self.device)
+            
+            model_inputs = self.tokenizer([formatted_text], return_tensors="pt").to(self.device)
             streamer = TextStreamer(self.tokenizer, skip_special_tokens=True)
-
+            
             generated_ids = self.model.generate(
                 **model_inputs,
-                max_new_tokens= max_new_tokens,
+                max_new_tokens=max_new_tokens,
                 streamer=streamer
             )
-
+            
             generated_ids = [
                 output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
             ]
-
-            response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            counter = len(self.tokenizer.encode(response))
-
-
-            return response, counter
-        
-        finally:
-            pass
-            # Clean up everything even if an error occurs
-            # forget_all(model=self.model,tokenizer=self.tokenizer)
-    def truncated(self, input_string, n_tokens=800):
-
-        try:
-          tokens = self.tokenizer.encode(input_string)
-          truncated_tokens = tokens[:n_tokens]
-          truncated_string = self.tokenizer.decode(truncated_tokens, skip_special_tokens=True)
-          return truncated_string
-        finally:
-            # self.forget_all()
-            pass
+            
+            summary = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            counter = len(self.tokenizer.encode(summary))
+            
+            return summary, counter
+        except Exception as e:
+            print(f"Error generating summary: {e}")
+            return "Error generating summary", 0
