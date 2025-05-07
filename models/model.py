@@ -14,9 +14,6 @@ class BaseModel():
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side = "left")
         
     def forget_all(self):
-        import gc
-        import os
-        import sys
 
         # Gestisci il modello in modo difensivo
         if self.model is not None:
