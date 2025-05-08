@@ -9,7 +9,7 @@ class BaseModel():
         self.model_name,
         quantization_config = self.quantization_config,
         device_map = self.device,
-        use_cache =  False)
+        use_cache =  True)
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side = "left")
         
